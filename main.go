@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 
 	"github.com/dghubble/oauth1"
 )
@@ -24,6 +25,8 @@ var config = oauth1.Config{
 }
 
 var requestSecret string
+
+var store = sessions.NewCookieStore([]byte("sdfuyisadhgjfbshjgdfatasdfguyhsdfb"))
 
 func main() {
 	r := mux.NewRouter()
@@ -64,6 +67,15 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("RequestToken: %s\nVerifier: %s\n", requestToken, verifier)))
 	w.Write([]byte(fmt.Sprintf("AccessToken: %s\nAccessSecret: %s\n", accessToken, accessSecret)))
 	w.Write([]byte(fmt.Sprintf("Token is %s\nSecret is %s\n", token.Token, token.TokenSecret)))
+
+	// Get a session. We're ignoring the error resulted from decoding an
+	// existing session: Get() always returns a session, even if empty.
+	session, _ := store.Get(r, "session-name")
+	// Set some session values.
+	session.Values["foo"] = "bar"
+	session.Values[42] = 43
+	// Save it before we write to the response/return from the handler.
+	session.Save(r, w)
 
 	httpClient := config.Client(oauth1.NoContext, token)
 
