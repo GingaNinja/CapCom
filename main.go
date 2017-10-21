@@ -32,6 +32,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", rootHandler)
 	r.HandleFunc("/authredirect", redirectHandler)
+	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
 	http.ListenAndServe(":8080", r)
 }
 
@@ -64,22 +65,30 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("Couldn't get the access token: %v\n", err)))
 	}
 	token := oauth1.NewToken(accessToken, accessSecret)
-	w.Write([]byte(fmt.Sprintf("RequestToken: %s\nVerifier: %s\n", requestToken, verifier)))
-	w.Write([]byte(fmt.Sprintf("AccessToken: %s\nAccessSecret: %s\n", accessToken, accessSecret)))
-	w.Write([]byte(fmt.Sprintf("Token is %s\nSecret is %s\n", token.Token, token.TokenSecret)))
+	// w.Write([]byte(fmt.Sprintf("RequestToken: %s\nVerifier: %s\n", requestToken, verifier)))
+	// w.Write([]byte(fmt.Sprintf("AccessToken: %s\nAccessSecret: %s\n", accessToken, accessSecret)))
+	// w.Write([]byte(fmt.Sprintf("Token is %s\nSecret is %s\n", token.Token, token.TokenSecret)))
 
 	// Get a session. We're ignoring the error resulted from decoding an
 	// existing session: Get() always returns a session, even if empty.
 	session, _ := store.Get(r, "session-name")
 	// Set some session values.
-	session.Values["foo"] = "bar"
-	session.Values[42] = 43
+	session.Values["token"] = token.Token
+	session.Values["tokenSecret"] = token.TokenSecret
+
 	// Save it before we write to the response/return from the handler.
 	session.Save(r, w)
 
-	httpClient := config.Client(oauth1.NoContext, token)
+	http.Redirect(w, r, "/getprivateaccounts", http.StatusFound)
+}
 
-	// example Twitter API request
+func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "session-name")
+	token := session.Values["token"].(string)
+	tokenSecret := session.Values["tokenSecret"].(string)
+	tokenObject := oauth1.NewToken(token, tokenSecret)
+	httpClient := config.Client(oauth1.NoContext, tokenObject)
+
 	path := "https://apisandbox.openbankproject.com/obp/v1.2.1/accounts/private"
 	resp, _ := httpClient.Get(path)
 	defer resp.Body.Close()
@@ -97,5 +106,4 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	os.Stdout.Write(b2)
 	os.Stdout.Write(b)
 	w.Write(b)
-	//w.Write([]byte("redirected yay"))
 }
