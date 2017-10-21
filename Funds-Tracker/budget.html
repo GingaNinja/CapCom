@@ -1,0 +1,58 @@
+<form action='/someServerSideHandler'>
+    <p>You have the following <span data-bind='text: gifts().length'>&nbsp;</span> transactions for &#x20A4;60:</p>
+    <table data-bind='visible: gifts().length > 0'>
+        <thead>
+        <tr>
+            <th>Category</th>
+            <th>Amount</th>
+            <th />
+        </tr>
+        </thead>
+        <tbody data-bind='foreach: gifts'>
+        <tr>
+            <td><input class='required' data-bind='value: name, uniqueName: true' /></td>
+            <td><input class='required number' data-bind='value: price, uniqueName: true' /></td>
+            <td><a href='#' data-bind='click: $root.removeGift'>Delete</a></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <button data-bind='click: addGift'>Add Category</button>
+    <button data-bind='enable: gifts().length > 0' type='submit'>Submit</button>
+</form>
+
+<script type='text/javascript' src='knockout-3.4.2.js'></script>
+
+<script>
+
+    var GiftModel = function(gifts) {
+        var self = this;
+        self.gifts = ko.observableArray(gifts);
+
+        self.addGift = function() {
+            self.gifts.push({
+                name: "",
+                price: ""
+            });
+        };
+
+        self.removeGift = function(gift) {
+            self.gifts.remove(gift);
+        };
+
+        self.save = function(form) {
+            alert("Could now transmit to server: " + ko.utils.stringifyJson(self.gifts));
+            // To actually transmit to server as a regular form post, write this: ko.utils.postJson($("form")[0], self.gifts);
+        };
+    };
+
+    var viewModel = new GiftModel([
+        { name: "Groceries", price: "39.20"},
+        { name: "Stationary", price: "0.80"}
+    ]);
+    ko.applyBindings(viewModel);
+
+    // Activate jQuery Validation
+    $("form").validate({ submitHandler: viewModel.save });
+
+</script>
