@@ -85,7 +85,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	store.MaxAge(-1)
-	w.Write([]byte("logged out"))
+	w.Write([]byte("logged out <a href='/'>Log back in</a>"))
 }
 
 func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
