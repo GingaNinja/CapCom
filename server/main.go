@@ -15,19 +15,22 @@ import (
 )
 
 const sessionName = "capcomsession"
+const apiBaseURL = "https://apisandbox.openbankproject.com"
+const apiNameAndVer = "obp/v1.2.1"
 
 // TOTALLY TEMP TO SAVE GETTING ACCOUNT NUMBER
 // MUST LOG IN AS cap-com / kingdomcodelondon
-const accountNumber = 20171020
+const accountNumber = "20171020"
+const bankName = "rbs"
 
 var config = oauth1.Config{
 	ConsumerKey:    "s4s5dt41li1av0focz2fffuknyrzjekjf1wcecc4",
 	ConsumerSecret: "mifcleu5gvmdol5jhwxdsygxqxzblwui0yts5sln",
 	CallbackURL:    "http://localhost:8080/authredirect",
 	Endpoint: oauth1.Endpoint{
-		RequestTokenURL: "https://apisandbox.openbankproject.com/oauth/initiate",
-		AuthorizeURL:    "https://apisandbox.openbankproject.com/oauth/authorize",
-		AccessTokenURL:  "https://apisandbox.openbankproject.com/oauth/token",
+		RequestTokenURL: apiBaseURL + "/oauth/initiate",
+		AuthorizeURL:    apiBaseURL + "/oauth/authorize",
+		AccessTokenURL:  apiBaseURL + "/oauth/token",
 	},
 }
 
@@ -118,6 +121,10 @@ func isAuthd(r *http.Request) bool {
 	return ok
 }
 
+func getFullApiUrl(resource string) string {
+	return apiBaseURL + "/" + apiNameAndVer + resource
+}
+
 func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isAuthd(r) {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -129,7 +136,7 @@ func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	tokenObject := oauth1.NewToken(token, tokenSecret)
 	httpClient := config.Client(oauth1.NoContext, tokenObject)
 
-	path := "https://apisandbox.openbankproject.com/obp/v1.2.1/accounts/private"
+	path := getFullApiUrl("/accounts/private")
 	resp, _ := httpClient.Get(path)
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -172,17 +179,43 @@ func apiGetNextTransactionDummyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
-	transaction := Transaction{
-		Id:          "1",
-		Amount:      12.99,
-		Description: "stuff",
-		Date:        time.Now(),
+	if !isAuthd(r) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
+	// session, _ := store.Get(r, sessionName)
+	// token := session.Values["token"].(string)
+	// tokenSecret := session.Values["tokenSecret"].(string)
+	// tokenObject := oauth1.NewToken(token, tokenSecret)
+	// httpClient := config.Client(oauth1.NoContext, tokenObject)
 
-	b, err := json.Marshal(transaction)
-	if err != nil {
-		panic(err)
-	}
-	w.Write(b)
-	w.Header().Set("Content-type", "application/json")
+	// // Make the call for transactions
+	// path := getFullApiUrl("/my/banks/" + bankName + "/accounts/" + accountNumber + "/transactions")
+	// resp, _ := httpClient.Get(path)
+
+	// // Get the json string into something workable
+	// // THIS BIT IS TOTALLY CONFUSED, NO IDEA HOW TO PLUCK BITS OF JSON
+	// // OUT OF MASSIVE DATA STRUCTURE, DON'T WANT TO MAP OUT THE WHOLE
+	// // JSON STRUCTURE DUE TO ITS SIZE.
+	// // NEEDS YODA...
+	// var transactionJSON map[string]interface{}
+	// if err := json.Unmarshal(byt, &transactionJSON); err != nil {
+	// 	panic(err)
+	// }
+	// firstTransaction = transactionJson[0]
+
+	// // Now populate the Transaction object from values in the JSON
+	// transaction := Transaction{
+	// 	Id:          firstTransaction["id"],
+	// 	Amount:      12.99,
+	// 	Description: "stuff",
+	// 	Date:        time.Now(),
+	// }
+
+	// b, err := json.Marshal(transaction)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// w.Write(b)
+	// w.Header().Set("Content-type", "application/json")
 }
