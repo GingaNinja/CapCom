@@ -42,6 +42,7 @@ func main() {
 	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
 	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionHandler)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("../Funds-Tracker/"))))
 	http.ListenAndServe(":8080", r)
 }
 
@@ -64,7 +65,8 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Hello! You're logged in"))
+	http.Redirect(w, r, "/static/", http.StatusFound)
+	//w.Write([]byte("Hello! You're logged in"))
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +97,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	// Save it before we write to the response/return from the handler.
 	session.Save(r, w)
 
-	http.Redirect(w, r, "/getprivateaccounts", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {

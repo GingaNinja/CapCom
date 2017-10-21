@@ -29,10 +29,10 @@ func handlerFile(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, "Asit")
 }
 
-func main() {
+func main_old() {
 	r := mux.NewRouter()
 	r.HandleFunc("/template", handler)
 	r.HandleFunc("/filestemplate", handlerFile)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("../Funds-Tracker/")))
+
 	http.ListenAndServe(":8080", r)
 }
