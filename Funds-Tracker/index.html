@@ -40,9 +40,24 @@
       <div class="container">
         <div class="section-title">
         <h1> Please verfiy the following payment for the allocator:</h1>
-        <h3><span>Transaction description</span>, <span>£800</span></h3>
         </div>
         <form>
+          <table data-bind='visible: gifts().length > 0'>
+            <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th />
+            </tr>
+            </thead>
+            <tbody data-bind='foreach: gifts'>
+              <tr>
+                <td><input class='required' data-bind='value: description, uniqueName: true' /></td>
+                <td><input class='required number' data-bind='value: amount, uniqueName: true' /></td>
+              </tr>
+            </tbody>
+
+<!--
           <p>What was it for? <select>
                         <option></option>
                         <option>Clothing & footwear</option>
@@ -54,28 +69,51 @@
                         <option>Vehicle Insurance</option>
                     </select></p>
           <p>Enter how much was spent: <input type="text" placeholder="Enter money.."><button type="submit" class="button_1">Save</button></p>
+-->
+          </table>
+          <button data-bind='enable: gifts().length > 0' type='submit'>Submit</button>
 
         </form>
       </div>
     </section>
-
-  <section class="trajectory">
-    <div class="section-title">
-      <h1>Trajectory: Are you still on budget?</h1>
-    </div>
-      <div id="progress" class="category">
-          <h1>Groceries</h1>
-
-      </div>
-  </section>
 
     <footer>
       <p>Cap-Com, Copyright &copy; 2017</p>
     </footer>
 
     <script type='text/javascript' src='knockout-3.4.2.js'></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script type="text/javascript" src="progressbar-min.js"></script>
-    <script type="text/javascript" src="progress.js"></script>
+
+    <script>
+
+        var GiftModel = function(gifts) {
+            var self = this;
+            self.gifts = ko.observableArray(gifts);
+
+            self.addGift = function() {
+                self.gifts.push({
+                    decsription: "",
+                    amount: ""
+                });
+            };
+
+            self.removeGift = function(gift) {
+                self.gifts.remove(gift);
+            };
+
+            self.save = function(form) {
+                alert("Could now transmit to server: " + ko.utils.stringifyJson(self.gifts));
+                // To actually transmit to server as a regular form post, write this: ko.utils.postJson($("form")[0], self.gifts);
+            };
+        };
+
+        var viewModel = new GiftModel([
+            { description: "Groceries", amount: "800"}
+        ]);
+        ko.applyBindings(viewModel);
+
+        // Activate jQuery Validation
+        $("form").validate({ submitHandler: viewModel.save });
+
+    </script>  
   </body>
 </html>
