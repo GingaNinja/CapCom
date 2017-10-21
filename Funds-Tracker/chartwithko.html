@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title id='Description'>This example shows how to integrate jqxChart with Knockout
+    </title>
+    <link rel="stylesheet" href="jqwidgets/styles/jqx.base.css" type="text/css" />
+    <script type="text/javascript" src="jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxdata.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxbuttons.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxchart.js"></script>
+    <script type="text/javascript" src="jquery-ui-1.10.3.min"></script>
+    <script type="text/javascript" src="knockout-3.4.2.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // prepare chart data
+            var sampleData = [
+                { Day: '1', Actual: 30, Forecast: 25 },
+                { Day: '2', Actual: 25, Forecast: 30 },
+                { Day: '3', Actual: 30, Forecast: 25 },
+                { Day: '4', Actual: 35, Forecast: 45 },
+                { Day: '5', Actual: 20, Forecast: 25 },
+                { Day: '6', Actual: 30, Forecast: 30 },
+                { Day: '7', Actual: 60, Forecast: 90 }
+            ];
+            var days = 7;
+            var ChartModel = function (items) {
+                this.items = ko.observableArray(items);
+                // add a new item.
+                this.addItem = function () {
+                    if (days < 20) {
+                        days++;
+                        this.items.push({ Day: days, Actual: Math.round(Math.random() * 30), Forecast: Math.round(Math.random() * 90) });
+                    }
+                };
+                // remove the last item.
+                this.removeItem = function () {
+                    if (days > 2) {
+                        days--;
+                        this.items.pop();
+                    }
+                };
+                // update the first item.
+                this.updateItem = function () {
+                    var item = {};
+                    item.Day = days[Math.floor(Math.random() * days.length)]
+                    item.Actual = Math.floor(Math.random() * 100);
+                    item.Forecast = Math.floor(Math.random() * 100);
+                    this.items.replace(this.items()[0], item);
+                };
+            };
+            // activate Knockout.
+            var model = new ChartModel(sampleData);
+            ko.applyBindings(model);
+            // initialize jqxButtons.
+            //$('#addButton').jqxButton();
+            //$('#removeButton').jqxButton();
+            //$('#updateButton').jqxButton();
+            // create the jqxGrid source object.
+            var source = {
+                localdata: model.items,
+                datatype: 'local'
+            }
+            // create a new instance of the jqxDataAdapter plug-in.
+            var dataAdapter = new $.jqx.dataAdapter(source);
+            // prepare jqxChart settings
+            var settings = {
+                title: "Balancing & forecasting",
+                description: "Difference between actual spend & real spend",
+                padding: { left: 5, top: 5, right: 5, bottom: 5 },
+                titlePadding: { left: 90, top: 0, right: 0, bottom: 10 },
+                source: dataAdapter,
+                categoryAxis:
+                    {
+                        dataField: 'Day',
+                        showGridLines: false
+                    },
+                colorScheme: 'scheme01',
+                seriesGroups:
+                    [
+                        {
+                            type: 'column',
+                            columnsGapPercent: 30,
+                            seriesGapPercent: 0,
+                            valueAxis:
+                                {
+                                    minValue: 0,
+                                    maxValue: 100,
+                                    unitInterval: 10,
+                                    description: 'Spend in pounds sterling'
+                                },
+                            series: [
+                                { dataField: 'Actual', displayText: 'Actual' },
+                                { dataField: 'Forecast', displayText: 'Forecast' }
+                            ]
+                        }
+                    ]
+            };
+            // select the chartContainer DIV element and render the chart.
+            $('#chartContainer').jqxChart(settings);
+        });
+    </script>
+</head>
+<body class='default'>
+<div id='jqxWidget'>
+    <div id="chartContainer" style="width:600px; height: 400px">
+    </div>
+    <div style="margin-top: 10px;">
+    </div>
+</div>
+</body>
+</html>
