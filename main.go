@@ -16,6 +16,10 @@ import (
 
 const sessionName = "capcomsession"
 
+// TOTALLY TEMP TO SAVE GETTING ACCOUNT NUMBER
+// MUST LOG IN AS cap-com / kingdomcodelondon
+const accountNumber = 20171020
+
 var config = oauth1.Config{
 	ConsumerKey:    "s4s5dt41li1av0focz2fffuknyrzjekjf1wcecc4",
 	ConsumerSecret: "mifcleu5gvmdol5jhwxdsygxqxzblwui0yts5sln",
