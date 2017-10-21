@@ -13,6 +13,8 @@ import (
 	"github.com/dghubble/oauth1"
 )
 
+const sessionName = "capcomsession"
+
 var config = oauth1.Config{
 	ConsumerKey:    "s4s5dt41li1av0focz2fffuknyrzjekjf1wcecc4",
 	ConsumerSecret: "mifcleu5gvmdol5jhwxdsygxqxzblwui0yts5sln",
@@ -52,7 +54,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("auth url: %s\n", authorizationURL)
 
 	http.Redirect(w, r, authorizationURL.String(), http.StatusFound)
-	//w.Write([]byte("yoyo"))
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +73,7 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get a session. We're ignoring the error resulted from decoding an
 	// existing session: Get() always returns a session, even if empty.
-	session, _ := store.Get(r, "session-name")
+	session, _ := store.Get(r, sessionName)
 	// Set some session values.
 	session.Values["token"] = token.Token
 	session.Values["tokenSecret"] = token.TokenSecret
@@ -88,8 +89,20 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("logged out <a href='/'>Log back in</a>"))
 }
 
+func isAuthd(r *http.Request) bool {
+	// Get a session. We're ignoring the error resulted from decoding an
+	// existing session: Get() always returns a session, even if empty.
+	session, _ := store.Get(r, sessionName)
+	_, ok := session.Values["token"]
+	return ok
+}
+
 func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "session-name")
+	if !isAuthd(r) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	session, _ := store.Get(r, sessionName)
 	token := session.Values["token"].(string)
 	tokenSecret := session.Values["tokenSecret"].(string)
 	tokenObject := oauth1.NewToken(token, tokenSecret)
