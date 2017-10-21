@@ -144,7 +144,7 @@ func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Transaction struct {
-	Id          string
+	ID          string
 	Amount      float64
 	Description string
 	Date        time.Time
@@ -152,7 +152,7 @@ type Transaction struct {
 
 func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	transaction := Transaction{
-		Id:          "1",
+		ID:          "1",
 		Amount:      12.99,
 		Description: "stuff",
 		Date:        time.Now(),
