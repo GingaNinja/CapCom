@@ -40,20 +40,25 @@ func main() {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	requestToken, requestSecret1, err := config.RequestToken()
-	if err != nil {
-		fmt.Printf("error getting token: %v\n", err)
-	}
-	requestSecret = requestSecret1
+	if !isAuthd(r) {
+		requestToken, requestSecret1, err := config.RequestToken()
+		if err != nil {
+			fmt.Printf("error getting token: %v\n", err)
+		}
+		requestSecret = requestSecret1
 
-	fmt.Printf("RequestToken: %v, RequestSecret: %v\n", requestToken, requestSecret)
-	authorizationURL, err := config.AuthorizationURL(requestToken)
-	if err != nil {
-		fmt.Printf("error getting auth url: %v\n", err)
-	}
-	fmt.Printf("auth url: %s\n", authorizationURL)
+		fmt.Printf("RequestToken: %v, RequestSecret: %v\n", requestToken, requestSecret)
+		authorizationURL, err := config.AuthorizationURL(requestToken)
+		if err != nil {
+			fmt.Printf("error getting auth url: %v\n", err)
+		}
+		fmt.Printf("auth url: %s\n", authorizationURL)
 
-	http.Redirect(w, r, authorizationURL.String(), http.StatusFound)
+		http.Redirect(w, r, authorizationURL.String(), http.StatusFound)
+		return
+	}
+
+	w.Write([]byte("Hello! You're logged in"))
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
