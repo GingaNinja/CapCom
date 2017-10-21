@@ -1,2 +1,4 @@
 .idea/
 capcom.exe
+.vscode/
+server/debug
