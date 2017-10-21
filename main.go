@@ -32,6 +32,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", rootHandler)
 	r.HandleFunc("/authredirect", redirectHandler)
+	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
 	http.ListenAndServe(":8080", r)
 }
@@ -80,6 +81,11 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 
 	http.Redirect(w, r, "/getprivateaccounts", http.StatusFound)
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	store.MaxAge(-1)
+	w.Write([]byte("logged out"))
 }
 
 func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
