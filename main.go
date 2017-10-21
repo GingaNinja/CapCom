@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -36,6 +37,7 @@ func main() {
 	r.HandleFunc("/authredirect", redirectHandler)
 	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
+	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionHandler)
 	http.ListenAndServe(":8080", r)
 }
 
@@ -79,9 +81,12 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	// Get a session. We're ignoring the error resulted from decoding an
 	// existing session: Get() always returns a session, even if empty.
 	session, _ := store.Get(r, sessionName)
+	store.MaxAge(65000)
 	// Set some session values.
-	session.Values["token"] = token.Token
-	session.Values["tokenSecret"] = token.TokenSecret
+	values := session.Values
+	values["token"] = token.Token
+	values["tokenSecret"] = token.TokenSecret
+	session.Values = values
 
 	// Save it before we write to the response/return from the handler.
 	session.Save(r, w)
@@ -130,4 +135,27 @@ func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	os.Stdout.Write(b2)
 	os.Stdout.Write(b)
 	w.Write(b)
+}
+
+type Transaction struct {
+	Id          string
+	Amount      float64
+	Description string
+	Date        time.Time
+}
+
+func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	transaction := Transaction{
+		Id:          "1",
+		Amount:      12.99,
+		Description: "stuff",
+		Date:        time.Now(),
+	}
+
+	b, err := json.Marshal(transaction)
+	if err != nil {
+		panic(err)
+	}
+	w.Write(b)
+	w.Header().Set("Content-type", "application/json")
 }
