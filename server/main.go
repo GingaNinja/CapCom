@@ -41,7 +41,12 @@ func main() {
 	r.HandleFunc("/authredirect", redirectHandler)
 	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
-	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionHandler)
+	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionDummyHandler)
+	// THIS NEXT ONE IS A TEMP THING TO ALLOW ME TO WORK ON GETTING A
+	// REAL TRANSACTION, WHILE KEEPING THE DUMMY TRANSACTION METHOD ACCESSIBLE.
+	// ONCE THE apiGetNextTransactionHandler IS COMPLETE, IT SHOULD BE PUT AGAINST
+	// THE /api/getnexttransaction ROUTE
+	r.HandleFunc("/api/getnexttransactiontest", apiGetNextTransactionHandler)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("../Funds-Tracker/"))))
 	http.ListenAndServe(":8080", r)
 }
@@ -148,6 +153,22 @@ type Transaction struct {
 	Amount      float64
 	Description string
 	Date        time.Time
+}
+
+func apiGetNextTransactionDummyHandler(w http.ResponseWriter, r *http.Request) {
+	transaction := Transaction{
+		Id:          "1",
+		Amount:      12.99,
+		Description: "stuff",
+		Date:        time.Now(),
+	}
+
+	b, err := json.Marshal(transaction)
+	if err != nil {
+		panic(err)
+	}
+	w.Write(b)
+	w.Header().Set("Content-type", "application/json")
 }
 
 func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
