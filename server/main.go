@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/burpydave/capcom/bankapi"
 	"github.com/gorilla/mux"
@@ -42,6 +43,7 @@ func main() {
 	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
 	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionHandler)
+	r.HandleFunc("/cleardate", clearDateHandler)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("../Funds-Tracker/"))))
 	http.ListenAndServe(":8080", r)
 }
@@ -105,6 +107,12 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("logged out <a href='/'>Log back in</a>"))
 }
 
+func clearDateHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, sessionName)
+	session.Values["lastTransactionDate"] = time.Date(1900, 1, 1, 1, 1, 1, 1, time.Local).Format("Mon Jan 2 15:04:05 -0700 MST 2006")
+	session.Save(r, w)
+}
+
 func isAuthd(r *http.Request) bool {
 	// Get a session. We're ignoring the error resulted from decoding an
 	// existing session: Get() always returns a session, even if empty.
@@ -140,7 +148,21 @@ func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	session, _ := store.Get(r, sessionName)
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("error getting session: %v\n", err)))
+		return
+	}
+
+	var lastTransactionDate time.Time
+	stringDate, ok := session.Values["lastTransactionDate"]
+	if !ok {
+		lastTransactionDate = time.Date(1900, 1, 1, 1, 1, 1, 1, time.Local)
+	} else {
+		lastTransactionDate, _ = time.Parse("Mon Jan 2 15:04:05 -0700 MST 2006", stringDate.(string))
+	}
+	fmt.Printf("lastTransactionDate: %v\n", lastTransactionDate)
+
 	token := session.Values["token"].(string)
 	tokenSecret := session.Values["tokenSecret"].(string)
 	tokenObject := oauth1.NewToken(token, tokenSecret)
@@ -151,16 +173,35 @@ func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	i := len(transactionList) - 1
+	for ; i > -1 && !transactionList[i].Date.After(lastTransactionDate); i-- {
+		fmt.Printf("date %d: %v\n", i, transactionList[i].Date.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+	}
+	if i > -1 {
+		fmt.Printf("Last date: %s\n", transactionList[i].Date.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+		transaction, err := bankAPI.GetTransactionFromID("rbs", "20171020", transactionList[i].ID)
+		if err != nil {
+			panic(err)
+		}
 
-	transaction, err := bankAPI.GetTransactionFromID("rbs", "20171020", transactionList[0])
-	if err != nil {
-		panic(err)
+		b, err := json.Marshal(transaction)
+		if err != nil {
+			panic(err)
+		}
+
+		session.Values["lastTransactionDate"] = transactionList[i].Date.Format("Mon Jan 2 15:04:05 -0700 MST 2006")
+		if err := session.Save(r, w); err != nil {
+			w.Write([]byte(fmt.Sprintf("error saving session: %v\n", err)))
+		}
+		w.Write(b)
+	} else {
+		result := bankapi.Transaction{}
+		b, err := json.Marshal(result)
+		if err != nil {
+			panic(err)
+		}
+		w.Write(b)
 	}
 
-	b, err := json.Marshal(transaction)
-	if err != nil {
-		panic(err)
-	}
-	w.Write(b)
 	w.Header().Set("Content-type", "application/json")
 }

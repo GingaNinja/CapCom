@@ -32,7 +32,8 @@ type transaction struct {
 }
 
 type shortTransaction struct {
-	ID string
+	ID      string
+	Details details
 }
 
 type transactionList struct {
@@ -46,12 +47,17 @@ type Transaction struct {
 	Date        time.Time
 }
 
+type TransactionShort struct {
+	ID   string
+	Date time.Time
+}
+
 // NewBankAPI is the constructor for the BankAPI
 func NewBankAPI(client *http.Client) BankAPI {
 	return BankAPI{client: client}
 }
 
-func (b BankAPI) GetTransactionsForAccount(bankID string, accountID string) ([]string, error) {
+func (b BankAPI) GetTransactionsForAccount(bankID string, accountID string) ([]TransactionShort, error) {
 	path := getFullApiUrl(fmt.Sprintf("/banks/%s/accounts/%s/owner/transactions", bankID, accountID))
 	resp, err := b.client.Get(path)
 	if err != nil {
@@ -69,9 +75,9 @@ func (b BankAPI) GetTransactionsForAccount(bankID string, accountID string) ([]s
 		return nil, err
 	}
 
-	ids := []string{}
+	ids := []TransactionShort{}
 	for _, t := range transactions.Transactions {
-		ids = append(ids, t.ID)
+		ids = append(ids, TransactionShort{ID: t.ID, Date: t.Details.Completed})
 	}
 	return ids, nil
 }
