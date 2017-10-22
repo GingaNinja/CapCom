@@ -44,12 +44,7 @@ func main() {
 	r.HandleFunc("/authredirect", redirectHandler)
 	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/getprivateaccounts", getPrivateAccountsHandler)
-	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionDummyHandler)
-	// THIS NEXT ONE IS A TEMP THING TO ALLOW ME TO WORK ON GETTING A
-	// REAL TRANSACTION, WHILE KEEPING THE DUMMY TRANSACTION METHOD ACCESSIBLE.
-	// ONCE THE apiGetNextTransactionHandler IS COMPLETE, IT SHOULD BE PUT AGAINST
-	// THE /api/getnexttransaction ROUTE
-	r.HandleFunc("/api/getnexttransactiontest", apiGetNextTransactionHandler)
+	r.HandleFunc("/api/getnexttransaction", apiGetNextTransactionHandler)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("../Funds-Tracker/"))))
 	http.ListenAndServe(":8080", r)
 }
@@ -156,18 +151,93 @@ func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Transaction struct {
-	Id          string
+	ID          string
 	Amount      float64
 	Description string
 	Date        time.Time
 }
 
-func apiGetNextTransactionDummyHandler(w http.ResponseWriter, r *http.Request) {
+type Value struct {
+	Amount float64 `json:",string"`
+}
+
+type Details struct {
+	Value       Value
+	Description string
+	Completed   time.Time
+}
+
+type ApiTransaction struct {
+	ID      string
+	Details Details
+}
+
+type shortTransaction struct {
+	ID string
+}
+
+type transactionList struct {
+	Transactions []shortTransaction
+}
+
+func getTransactionsForAccount(client *http.Client, bankID string, accountID string) ([]string, error) {
+	path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/%s/accounts/%s/owner/transactions", bankID, accountID)
+	fmt.Printf("Aboutn to call %s\n", path)
+	resp, err := client.Get(path)
+	if err != nil {
+		return nil, fmt.Errorf("issue getting request: %v", err)
+	}
+	defer resp.Body.Close()
+	byt, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading body: %v", err)
+	}
+
+	var transactions transactionList
+
+	if err := json.Unmarshal(byt, &transactions); err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for _, t := range transactions.Transactions {
+		ids = append(ids, t.ID)
+	}
+	return ids, nil
+}
+
+func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAuthd(r) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	session, _ := store.Get(r, sessionName)
+	token := session.Values["token"].(string)
+	tokenSecret := session.Values["tokenSecret"].(string)
+	tokenObject := oauth1.NewToken(token, tokenSecret)
+	httpClient := config.Client(oauth1.NoContext, tokenObject)
+
+	transactions, err := getTransactionsForAccount(httpClient, "rbs", "20171020")
+	if err != nil {
+		panic(err)
+	}
+
+	path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/rbs/accounts/20171020/owner/transactions/%s/transaction", transactions[0])
+	resp, _ := httpClient.Get(path)
+	defer resp.Body.Close()
+	byt, _ := ioutil.ReadAll(resp.Body)
+
+	var apiTransaction ApiTransaction
+
+	if err := json.Unmarshal(byt, &apiTransaction); err != nil {
+		panic(err)
+	}
+
 	transaction := Transaction{
-		Id:          "1",
-		Amount:      12.99,
-		Description: "stuff",
-		Date:        time.Now(),
+		ID:          apiTransaction.ID,
+		Amount:      apiTransaction.Details.Value.Amount,
+		Description: apiTransaction.Details.Description,
+		Date:        apiTransaction.Details.Completed,
 	}
 
 	b, err := json.Marshal(transaction)
@@ -178,44 +248,44 @@ func apiGetNextTransactionDummyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 }
 
-func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
-	if !isAuthd(r) {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	// session, _ := store.Get(r, sessionName)
-	// token := session.Values["token"].(string)
-	// tokenSecret := session.Values["tokenSecret"].(string)
-	// tokenObject := oauth1.NewToken(token, tokenSecret)
-	// httpClient := config.Client(oauth1.NoContext, tokenObject)
+// func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
+// 	if !isAuthd(r) {
+// 		http.Redirect(w, r, "/", http.StatusFound)
+// 		return
+// 	}
+// 	// session, _ := store.Get(r, sessionName)
+// 	// token := session.Values["token"].(string)
+// 	// tokenSecret := session.Values["tokenSecret"].(string)
+// 	// tokenObject := oauth1.NewToken(token, tokenSecret)
+// 	// httpClient := config.Client(oauth1.NoContext, tokenObject)
 
-	// // Make the call for transactions
-	// path := getFullApiUrl("/my/banks/" + bankName + "/accounts/" + accountNumber + "/transactions")
-	// resp, _ := httpClient.Get(path)
+// 	// // Make the call for transactions
+// 	// path := getFullApiUrl("/my/banks/" + bankName + "/accounts/" + accountNumber + "/transactions")
+// 	// resp, _ := httpClient.Get(path)
 
-	// // Get the json string into something workable
-	// // THIS BIT IS TOTALLY CONFUSED, NO IDEA HOW TO PLUCK BITS OF JSON
-	// // OUT OF MASSIVE DATA STRUCTURE, DON'T WANT TO MAP OUT THE WHOLE
-	// // JSON STRUCTURE DUE TO ITS SIZE.
-	// // NEEDS YODA...
-	// var transactionJSON map[string]interface{}
-	// if err := json.Unmarshal(byt, &transactionJSON); err != nil {
-	// 	panic(err)
-	// }
-	// firstTransaction = transactionJson[0]
+// 	// // Get the json string into something workable
+// 	// // THIS BIT IS TOTALLY CONFUSED, NO IDEA HOW TO PLUCK BITS OF JSON
+// 	// // OUT OF MASSIVE DATA STRUCTURE, DON'T WANT TO MAP OUT THE WHOLE
+// 	// // JSON STRUCTURE DUE TO ITS SIZE.
+// 	// // NEEDS YODA...
+// 	// var transactionJSON map[string]interface{}
+// 	// if err := json.Unmarshal(byt, &transactionJSON); err != nil {
+// 	// 	panic(err)
+// 	// }
+// 	// firstTransaction = transactionJson[0]
 
-	// // Now populate the Transaction object from values in the JSON
-	// transaction := Transaction{
-	// 	Id:          firstTransaction["id"],
-	// 	Amount:      12.99,
-	// 	Description: "stuff",
-	// 	Date:        time.Now(),
-	// }
+// 	// // Now populate the Transaction object from values in the JSON
+// 	// transaction := Transaction{
+// 	// 	Id:          firstTransaction["id"],
+// 	// 	Amount:      12.99,
+// 	// 	Description: "stuff",
+// 	// 	Date:        time.Now(),
+// 	// }
 
-	// b, err := json.Marshal(transaction)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// w.Write(b)
-	// w.Header().Set("Content-type", "application/json")
-}
+// 	// b, err := json.Marshal(transaction)
+// 	// if err != nil {
+// 	// 	panic(err)
+// 	// }
+// 	// w.Write(b)
+// 	// w.Header().Set("Content-type", "application/json")
+// }

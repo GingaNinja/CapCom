@@ -17,27 +17,49 @@
         <nav>
           <ul>
             <li class="current"><a href="index.html">Home</a></li>
-            <li><a href="#">ALink</a></li>
+            <li><a href="budget.html">Budget HTML</a></li>
             <li><a href="#">AnotherLink</a></li>
           </ul>
         </nav>
       </div>
     </header>
 
-    <section id="showcase">
+    <section class="showcase">
       <div class="container">
 
-        <h1>Input how much you have spent</h1>
+          <!-- <h1>Input how much you have spent</h1> -->
+          <h1>Hi <span>Travis</span>, This is your budget for the month:</h1>
+          <p><span>£800</span></p>
+
+
+
       </div>
     </section>
 
-    <section id="allocation">
+    <section class="allocation">
       <div class="container">
-        <h1>This is how much you have spent: £800</h1>
+        <div class="section-title">
+        <h1> Please verify the following payment for the allocator:</h1>
+        <p>description: <span id="js-description" data-bind="template: {name: 'OfficeWebControls-Title', data: ribbonViewModel}"></span id="js-amount"></p>
+        </div>
         <form>
+          <table data-bind='visible: gifts().length > 0'>
+            <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th />
+            </tr>
+            </thead>
+            <tbody data-bind='foreach: gifts'>
+              <tr>
+                <td><input class='required' data-bind='value: description, uniqueName: true' /></td>
+                <td><input class='required number' data-bind='value: amount, uniqueName: true' /></td>
+              </tr>
+            </tbody>
+        </table>
 
-
-          <p>What was it for? <select>
+          <p>What was it for? <select data-bind="">
                         <option></option>
                         <option>Clothing & footwear</option>
                         <option>Food & supplies</option>
@@ -49,16 +71,57 @@
                     </select></p>
           <p>Enter how much was spent: <input type="text" placeholder="Enter money.."><button type="submit" class="button_1">Save</button></p>
 
+
+          <button data-bind='enable: gifts().length > 0' type='submit'>Submit</button>
+
         </form>
       </div>
     </section>
 
-  <section class="trajectory">
+    <section>
+      <div class="" >
 
-  </section>
+      </div>
+    </section>
 
     <footer>
       <p>Cap-Com, Copyright &copy; 2017</p>
     </footer>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script type='text/javascript' src='knockout-3.4.2.js'></script>
+
+    <!-- <script>
+
+        var GiftModel = function(gifts) {
+            var self = this;
+            self.gifts = ko.observableArray(gifts);
+
+            self.addGift = function() {
+                self.gifts.push({
+                    decsription: "",
+                    amount: ""
+                });
+            };
+
+            self.removeGift = function(gift) {
+                self.gifts.remove(gift);
+            };
+
+            self.save = function(form) {
+                alert("Could now transmit to server: " + ko.utils.stringifyJson(self.gifts));
+                // To actually transmit to server as a regular form post, write this: ko.utils.postJson($("form")[0], self.gifts);
+            };
+        };
+
+        var viewModel = new GiftModel([
+            { description: "Groceries", amount: "800"}
+        ]);
+        ko.applyBindings(viewModel);
+
+        // Activate jQuery Validation
+        $("form").validate({ submitHandler: viewModel.save });
+
+    </script> -->
   </body>
 </html>
