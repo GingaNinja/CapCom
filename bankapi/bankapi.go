@@ -52,7 +52,7 @@ func NewBankAPI(client *http.Client) BankAPI {
 }
 
 func (b BankAPI) GetTransactionsForAccount(bankID string, accountID string) ([]string, error) {
-	path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/%s/accounts/%s/owner/transactions", bankID, accountID)
+	path := getFullApiUrl(fmt.Sprintf("/banks/%s/accounts/%s/owner/transactions", bankID, accountID))
 	resp, err := b.client.Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("issue getting request: %v", err)
@@ -78,7 +78,6 @@ func (b BankAPI) GetTransactionsForAccount(bankID string, accountID string) ([]s
 
 func (b BankAPI) GetTransactionFromID(bankName, accountNumber, transactionID string) (tran Transaction, err error) {
 	path := getFullApiUrl(fmt.Sprintf("/banks/%s/accounts/%s/owner/transactions/%s/transaction", bankName, accountNumber, transactionID))
-	//path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/rbs/accounts/20171020/owner/transactions/%s/transaction", transactionID)
 	resp, err := b.client.Get(path)
 	if err != nil {
 		return tran, fmt.Errorf("error requesting transaction information: %v", err)
