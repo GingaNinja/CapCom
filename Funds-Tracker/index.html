@@ -39,7 +39,8 @@
     <section class="allocation">
       <div class="container">
         <div class="section-title">
-        <h1> Please verfiy the following payment for the allocator:</h1>
+        <h1> Please verify the following payment for the allocator:</h1>
+        <p>description: <span id="js-description" data-bind="template: {name: 'OfficeWebControls-Title', data: ribbonViewModel}"></span id="js-amount"></p>
         </div>
         <form>
           <table data-bind='visible: gifts().length > 0'>
@@ -56,9 +57,9 @@
                 <td><input class='required number' data-bind='value: amount, uniqueName: true' /></td>
               </tr>
             </tbody>
+        </table>
 
-<!--
-          <p>What was it for? <select>
+          <p>What was it for? <select data-bind="">
                         <option></option>
                         <option>Clothing & footwear</option>
                         <option>Food & supplies</option>
@@ -69,11 +70,17 @@
                         <option>Vehicle Insurance</option>
                     </select></p>
           <p>Enter how much was spent: <input type="text" placeholder="Enter money.."><button type="submit" class="button_1">Save</button></p>
--->
-          </table>
+
+
           <button data-bind='enable: gifts().length > 0' type='submit'>Submit</button>
 
         </form>
+      </div>
+    </section>
+
+    <section>
+      <div class="" >
+
       </div>
     </section>
 
@@ -81,9 +88,10 @@
       <p>Cap-Com, Copyright &copy; 2017</p>
     </footer>
 
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script type='text/javascript' src='knockout-3.4.2.js'></script>
 
-    <script>
+    <!-- <script>
 
         var GiftModel = function(gifts) {
             var self = this;
@@ -114,6 +122,6 @@
         // Activate jQuery Validation
         $("form").validate({ submitHandler: viewModel.save });
 
-    </script>  
+    </script> -->
   </body>
 </html>
