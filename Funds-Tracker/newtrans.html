@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+
+
+    <title>Funds trackr</title>
+    <link rel="stylesheet" href="./css/style.css">
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div id="branding">
+          <h1><span class="highlight">Funds</span> Tracker</h1>
+        </div>
+        <nav>
+          <ul>
+            <li class="current"><a href="index.html">Home</a></li>
+            <li><a href="budget.html">Budget HTML</a></li>
+            <li><a href="#">AnotherLink</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <section class="allocation">
+        <div class="container">
+          <h1> Yo</h1>
+          <button onclick="getNextTransaction()">get next trans</button>
+          <div id="transactionList">
+            <table>
+              <thead>
+              <tr><th>Date</th><th>Amount</th><th>Description</th><th>What for?</th></tr>
+              </thead>
+              <tbody data-bind="foreach: transactions">
+              <tr>
+                <td data-bind="text: date"></td>
+                <td data-bind="text: amount"></td>
+                <td data-bind="text: description"></td>
+                <td>
+                  <span data-bind="text: budgetCode"></span>
+                  <div data-bind="ifnot: budgetCode">
+                      <select data-bind="options: $root.budgetCodes, value: budgetCode"></select>
+                    </div>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+    </section>
+    <footer>
+      <p>Cap-Com, Copyright &copy; 2017</p>
+    </footer>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script type='text/javascript' src='knockout-3.4.2.js'></script>
+
+    <script>
+        var viewModel = {};
+        viewModel.transactions = ko.observableArray();
+        viewModel.budgetCodes = ko.observableArray(['', 'Food', 'Hackathons', 'Clothes']);
+
+        ko.applyBindings(viewModel);
+
+        function getNextTransaction() {
+            $.getJSON("/api/getnexttransaction", function(data) {
+                // Now use this data to update your view models,
+                // and Knockout will update your UI automatically
+                if (data.ID) {
+                    var newTransaction = {id: data.ID, amount: data.Amount, date: data.Date, description: data.Description, budgetCode: ko.observable(null)};
+                    viewModel.transactions.push(newTransaction);
+                }
+            })
+        }
+    </script>
+</body>
+</html>
