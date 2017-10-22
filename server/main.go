@@ -181,7 +181,7 @@ type transactionList struct {
 }
 
 func getTransactionsForAccount(client *http.Client, bankID string, accountID string) ([]string, error) {
-	path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/%s/accounts/%s/owner/transactions", bankID, accountID)
+	path := getFullApiUrl(fmt.Sprintf("/banks/%s/accounts/%s/owner/transactions", bankID, accountID))
 	fmt.Printf("Aboutn to call %s\n", path)
 	resp, err := client.Get(path)
 	if err != nil {
@@ -222,7 +222,7 @@ func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	path := fmt.Sprintf("https://apisandbox.openbankproject.com/obp/v1.2.1/banks/rbs/accounts/20171020/owner/transactions/%s/transaction", transactions[0])
+	path := getFullApiUrl(fmt.Sprintf("/banks/"+bankName+"/accounts/"+accountNumber+"/owner/transactions/%s/transaction", transactions[0]))
 	resp, _ := httpClient.Get(path)
 	defer resp.Body.Close()
 	byt, _ := ioutil.ReadAll(resp.Body)
