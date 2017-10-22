@@ -27,9 +27,14 @@
 
     <section class="allocation">
         <div class="container">
-          <h1> Here's your spending</h1>
+          <h1> Spend Tracker</h1>
           <p>All your spending is shown here - just tell us what you spent them on, and we'll solve all your budget tracking needs for ever and ever, amen <input type="checkbox" data-bind="checked: pollingEnabled" /></p>
           <span data-bind="timer: $root.poll"></span>
+          <h2> Totals by category</h2>
+          <p>Food: <span data-bind="text: JSON.stringify(getTotalsByBudgetCode()['Food'])"></span></p>
+          <p>Hackathons: <span data-bind="text: JSON.stringify(getTotalsByBudgetCode()['Hackathons'])"></span></p>
+          <p>Clothes: <span data-bind="text: JSON.stringify(getTotalsByBudgetCode()['Clothes'])"></span></p>
+          <h2> Transaction list</h2>
           <div id="transactionList">
             <table>
               <thead>
@@ -65,6 +70,15 @@
         viewModel.budgetCodes = ko.observableArray(['', 'Food', 'Hackathons', 'Clothes']);
         viewModel.poll = ko.observable();
         viewModel.pollingEnabled = ko.observable(true);
+        viewModel.getTotalsByBudgetCode = ko.computed(function() {
+            totals = {Food: 0, Hackathons: 0, Clothes: 0};
+            ko.utils.arrayForEach(this.transactions(), function(item) {
+                if (item.budgetCode()) {
+                    totals[item.budgetCode()] += item.amount;
+                }
+            });
+            return totals;
+        }, viewModel);
 
         ko.bindingHandlers.timer = {
             update: function (element, valueAccessor) {
