@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/burpydave/capcom/bankapi"
+	"github.com/ginganinja/capcom/bankapi"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 
