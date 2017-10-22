@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+const apiBaseURL = "https://apisandbox.openbankproject.com"
+const apiNameAndVer = "obp/v1.2.1"
+
 // BankAPI allows communication with a bank
 type BankAPI struct {
 	client *http.Client
@@ -98,7 +101,7 @@ func (b BankAPI) GetTransactionFromID(transactionID string) (tran Transaction, e
 }
 
 func (b BankAPI) GetPrivateAccounts() (jsonBytes []byte, err error) {
-	path := "https://apisandbox.openbankproject.com/obp/v1.2.1/accounts/private"
+	path := getFullApiUrl("/accounts/private")
 	resp, err := b.client.Get(path)
 	if err != nil {
 		return jsonBytes, fmt.Errorf("error getting accounts: %v", err)
@@ -119,4 +122,8 @@ func (b BankAPI) GetPrivateAccounts() (jsonBytes []byte, err error) {
 	}
 
 	return
+}
+
+func getFullApiUrl(resource string) string {
+	return apiBaseURL + "/" + apiNameAndVer + resource
 }
