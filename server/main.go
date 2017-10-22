@@ -3,11 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
-	"time"
 
+	"github.com/burpydave/capcom/bankapi"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 
@@ -15,13 +13,12 @@ import (
 )
 
 const sessionName = "capcomsession"
-const apiBaseURL = "https://apisandbox.openbankproject.com"
-const apiNameAndVer = "obp/v1.2.1"
 
 // TOTALLY TEMP TO SAVE GETTING ACCOUNT NUMBER
 // MUST LOG IN AS cap-com / kingdomcodelondon
 const accountNumber = "20171020"
 const bankName = "rbs"
+const apiBaseURL = "https://apisandbox.openbankproject.com"
 
 var config = oauth1.Config{
 	ConsumerKey:    "s4s5dt41li1av0focz2fffuknyrzjekjf1wcecc4",
@@ -116,10 +113,6 @@ func isAuthd(r *http.Request) bool {
 	return ok
 }
 
-func getFullApiUrl(resource string) string {
-	return apiBaseURL + "/" + apiNameAndVer + resource
-}
-
 func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	if !isAuthd(r) {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -130,80 +123,16 @@ func getPrivateAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	tokenSecret := session.Values["tokenSecret"].(string)
 	tokenObject := oauth1.NewToken(token, tokenSecret)
 	httpClient := config.Client(oauth1.NoContext, tokenObject)
+	bankAPI := bankapi.NewBankAPI(httpClient)
 
-	path := getFullApiUrl("/accounts/private")
-	resp, _ := httpClient.Get(path)
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	var dat map[string]interface{}
-
-	if err := json.Unmarshal(body, &dat); err != nil {
-		panic(err)
-	}
-	b, err := json.MarshalIndent(dat, "", "  ")
+	b, err := bankAPI.GetPrivateAccounts()
 	if err != nil {
 		panic(err)
 	}
-	b2 := append(b, '\n')
-	os.Stdout.Write(b2)
-	os.Stdout.Write(b)
+	//b2 := append(b, '\n')
+	//os.Stdout.Write(b2)
+	//os.Stdout.Write(b)
 	w.Write(b)
-}
-
-type Transaction struct {
-	ID          string
-	Amount      float64
-	Description string
-	Date        time.Time
-}
-
-type Value struct {
-	Amount float64 `json:",string"`
-}
-
-type Details struct {
-	Value       Value
-	Description string
-	Completed   time.Time
-}
-
-type ApiTransaction struct {
-	ID      string
-	Details Details
-}
-
-type shortTransaction struct {
-	ID string
-}
-
-type transactionList struct {
-	Transactions []shortTransaction
-}
-
-func getTransactionsForAccount(client *http.Client, bankID string, accountID string) ([]string, error) {
-	path := getFullApiUrl(fmt.Sprintf("/banks/%s/accounts/%s/owner/transactions", bankID, accountID))
-	fmt.Printf("Aboutn to call %s\n", path)
-	resp, err := client.Get(path)
-	if err != nil {
-		return nil, fmt.Errorf("issue getting request: %v", err)
-	}
-	defer resp.Body.Close()
-	byt, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading body: %v", err)
-	}
-
-	var transactions transactionList
-
-	if err := json.Unmarshal(byt, &transactions); err != nil {
-		return nil, err
-	}
-
-	ids := []string{}
-	for _, t := range transactions.Transactions {
-		ids = append(ids, t.ID)
-	}
-	return ids, nil
 }
 
 func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
@@ -216,28 +145,16 @@ func apiGetNextTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	tokenSecret := session.Values["tokenSecret"].(string)
 	tokenObject := oauth1.NewToken(token, tokenSecret)
 	httpClient := config.Client(oauth1.NoContext, tokenObject)
+	bankAPI := bankapi.NewBankAPI(httpClient)
 
-	transactions, err := getTransactionsForAccount(httpClient, "rbs", "20171020")
+	transactionList, err := bankAPI.GetTransactionsForAccount("rbs", "20171020")
 	if err != nil {
 		panic(err)
 	}
 
-	path := getFullApiUrl(fmt.Sprintf("/banks/"+bankName+"/accounts/"+accountNumber+"/owner/transactions/%s/transaction", transactions[0]))
-	resp, _ := httpClient.Get(path)
-	defer resp.Body.Close()
-	byt, _ := ioutil.ReadAll(resp.Body)
-
-	var apiTransaction ApiTransaction
-
-	if err := json.Unmarshal(byt, &apiTransaction); err != nil {
+	transaction, err := bankAPI.GetTransactionFromID("rbs", "20171020", transactionList[0])
+	if err != nil {
 		panic(err)
-	}
-
-	transaction := Transaction{
-		ID:          apiTransaction.ID,
-		Amount:      apiTransaction.Details.Value.Amount,
-		Description: apiTransaction.Details.Description,
-		Date:        apiTransaction.Details.Completed,
 	}
 
 	b, err := json.Marshal(transaction)
