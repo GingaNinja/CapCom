@@ -18,16 +18,18 @@
           <ul>
             <li class="current"><a href="index.html">Home</a></li>
             <li><a href="budget.html">Budget HTML</a></li>
-            <li><a href="#">AnotherLink</a></li>
-          </ul>
+            <li><a href="#">Start tithing</a></li>
+            <li><a href="#">Give your money to Kingdom Code</a></li>
+        </ul>
         </nav>
       </div>
     </header>
 
     <section class="allocation">
         <div class="container">
-          <h1> Yo</h1>
-          <button onclick="getNextTransaction()">get next trans</button>
+          <h1> Here's your spending</h1>
+          <p>All your spending is shown here - just tell us what you spent them on, and we'll solve all your budget tracking needs for ever and ever, amen <input type="checkbox" data-bind="checked: pollingEnabled" /></p>
+          <span data-bind="timer: $root.poll"></span>
           <div id="transactionList">
             <table>
               <thead>
@@ -35,10 +37,10 @@
               </thead>
               <tbody data-bind="foreach: transactions">
               <tr>
-                <td data-bind="text: date"></td>
-                <td data-bind="text: amount"></td>
-                <td data-bind="text: description"></td>
-                <td>
+                <td data-bind="text: date" align="center"></td>
+                <td data-bind="text: amount" align="center"></td>
+                <td data-bind="text: description" align="center"></td>
+                <td align="center"> 
                   <span data-bind="text: budgetCode"></span>
                   <div data-bind="ifnot: budgetCode">
                       <select data-bind="options: $root.budgetCodes, value: budgetCode"></select>
@@ -61,6 +63,19 @@
         var viewModel = {};
         viewModel.transactions = ko.observableArray();
         viewModel.budgetCodes = ko.observableArray(['', 'Food', 'Hackathons', 'Clothes']);
+        viewModel.poll = ko.observable();
+        viewModel.pollingEnabled = ko.observable(true);
+
+        ko.bindingHandlers.timer = {
+            update: function (element, valueAccessor) {
+                // retrieve the value from the span
+                var timer = setInterval(function() { 
+                    if (viewModel.pollingEnabled()) {
+                        getNextTransaction();
+                    }
+                }, 1000);
+            }
+        };
 
         ko.applyBindings(viewModel);
 
@@ -69,8 +84,8 @@
                 // Now use this data to update your view models,
                 // and Knockout will update your UI automatically
                 if (data.ID) {
-                    var newTransaction = {id: data.ID, amount: data.Amount, date: data.Date, description: data.Description, budgetCode: ko.observable(null)};
-                    viewModel.transactions.push(newTransaction);
+                    var newTransaction = {id: data.ID, amount: data.Amount * -1, date: data.Date, description: data.Description, budgetCode: ko.observable(null)};
+                    viewModel.transactions.unshift(newTransaction);
                 }
             })
         }
